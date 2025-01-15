@@ -14,13 +14,6 @@ class Worker {
   handleCors(request) {
     if (request.method === "OPTIONS") {
       return this.createResponse(null)
-      // return new Response(null, {
-      //   headers: {
-      //     "Access-Control-Allow-Origin": this.corsWhiteList,
-      //     "Access-Control-Allow-Methods": "GET",
-      //     "Access-Control-Allow-Headers": "Content-Type",
-      //   },
-      // });
     }
   }
 
