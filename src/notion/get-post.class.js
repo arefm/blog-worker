@@ -10,7 +10,14 @@ class GetPost extends Notion {
 
   constructor (env, params) {
     super(env)
-    this.slug = params.get('slug') || '404'
+    this.slug = this.sanitizeSlug(params.get('slug') || '404')
+  }
+
+  sanitizeSlug(slug) {
+    if (!slug) {
+      return null
+    }
+    return slug.replace(/[^a-zA-Z0-9-_]/g, '');
   }
 
   async execute() {
