@@ -4,9 +4,7 @@ class GetPosts extends Notion {
 
   constructor (worker) {
     super(worker.env)
-
-    this.getCacheResponse = worker.getCacheResponse
-    this.setCacheResponse = worker.setCacheResponse
+    this.KV = worker.env.NOTION_BLOG_POSTS_CACHE
 
     this.cursors = new Map()
     this.page = isNaN(parseInt(worker.params.get('page'))) ? 1 : parseInt(params.get('page'))
@@ -15,7 +13,7 @@ class GetPosts extends Notion {
 
   async execute() {
     const cacheKey = 'notion:blog:posts';
-    const cachedPosts = this.getCacheResponse(cacheKey);
+    const cachedPosts = this.KV.get(cacheKey, { type: 'json' });
 
     if (cachedPosts) {
       return cachedPosts;
@@ -41,7 +39,7 @@ class GetPosts extends Notion {
     const transformedPosts = await Promise.all(
       posts.results.map(async post => await this.transformPost(post))
     )
-    this.setCacheResponse(cacheKey, transformedPosts);
+    await this.KV.put(cacheKey, JSON.stringify(transformedPosts), { expirationTtl: 3600 });
     return transformedPosts;
   }
 

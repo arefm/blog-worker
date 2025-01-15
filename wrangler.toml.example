@@ -10,3 +10,7 @@ CACHE_TTL=3600
 [vars.env]
 NOTION_TOKEN = ""
 NOTION_DATABASE_ID=""
+
+[[kv_namespaces]]
+binding = ""
+id = ""

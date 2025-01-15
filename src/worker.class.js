@@ -1,10 +1,3 @@
-import { LRUCache } from "lru-cache"
-
-const cache = new LRUCache({
-  max: 50,
-  ttl: 3600 * 1000 // 1 hour
-})
-
 class Worker {
 
   constructor (request, env) {
@@ -12,7 +5,7 @@ class Worker {
     const params = ReqUrl.searchParams
 
     this.corsWhiteList = env.CORS_WHITE_LIST
-    this.action = params.get('action')
+    this.action = this.sanitizeAction(params.get('action'))
     this.params = params
     this.env = env
 
@@ -33,14 +26,13 @@ class Worker {
         "Access-Control-Allow-Headers": "Content-Type",
       },
     });
-  } const
-
-  getCacheResponse(cacheKey) {
-    return cache.get(cacheKey);
   }
 
-  setCacheResponse(cacheKey, response) {
-    cache.set(cacheKey, response);
+  sanitizeAction(action) {
+    if (!action) {
+      return null
+    }
+    return action.replace(/[^a-zA-Z0-9-_]/g, '');
   }
 
 }
