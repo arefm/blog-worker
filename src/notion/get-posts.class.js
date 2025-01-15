@@ -1,4 +1,10 @@
+import { LRUCache } from 'lru-cache'
 import Notion from './notion.class'
+
+const cache = new LRUCache({
+  max: 10,
+  ttl: 1000 * 60 * 60 // 1 hour
+})
 
 class GetPosts extends Notion {
 
@@ -10,6 +16,13 @@ class GetPosts extends Notion {
   }
 
   async execute() {
+    const cacheKey = 'notion:blog:posts';
+    const cachedPosts = cache.get(cacheKey);
+
+    if (cachedPosts) {
+      return cachedPosts;
+    }
+
     const posts = await this.notion.databases.query({
       database_id: this.databaseId,
       filter: {
@@ -27,9 +40,11 @@ class GetPosts extends Notion {
 
     // console.log(posts)
 
-    return await Promise.all(
+    const transformedPosts = await Promise.all(
       posts.results.map(async post => await this.transformPost(post))
     )
+    cache.set(cacheKey, transformedPosts);
+    return transformedPosts;
   }
 
 }

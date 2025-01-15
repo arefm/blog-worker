@@ -1,4 +1,4 @@
-import LRUCache from 'lru-cache'
+import { LRUCache } from 'lru-cache'
 import Notion from './notion.class'
 
 const cache = new LRUCache({
@@ -21,7 +21,7 @@ class GetPost extends Notion {
   }
 
   async execute() {
-    const cacheKey = `post:${this.slug}`;
+    const cacheKey = `'notion:blog:post:${this.slug}`;
     const cachedPost = cache.get(cacheKey);
 
     if (cachedPost) {
