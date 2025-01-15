@@ -1,0 +1,21 @@
+{
+  "name": "blog-notion-api",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev",
+    "start": "wrangler dev",
+    "test": "vitest"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.5.2",
+    "vitest": "2.1.8",
+    "wrangler": "^3.102.0"
+  },
+  "dependencies": {
+    "@notionhq/client": "^2.2.15",
+    "date-fns": "^4.1.0",
+    "notion-to-md": "^3.1.4"
+  }
+}

@@ -1,0 +1,10 @@
+name = "blog-notion-api"
+main = "src/main.js"
+compatibility_date = ""
+
+[vars]
+CORS_WHITE_LIST=""
+
+[vars.env]
+NOTION_TOKEN = ""
+NOTION_DATABASE_ID=""
