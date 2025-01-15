@@ -1,16 +1,14 @@
-import { LRUCache } from 'lru-cache'
 import Notion from './notion.class'
-
-const cache = new LRUCache({
-  max: 10,
-  ttl: 1000 * 60 * 60 // 1 hour
-})
 
 class GetPost extends Notion {
 
-  constructor (env, params) {
-    super(env)
-    this.slug = this.sanitizeSlug(params.get('slug') || '404')
+  constructor (worker) {
+    super(worker.env)
+
+    this.getCacheResponse = worker.getCacheResponse
+    this.setCacheResponse = worker.setCacheResponse
+
+    this.slug = this.sanitizeSlug(worker.params.get('slug') || '404')
   }
 
   sanitizeSlug(slug) {
@@ -22,7 +20,7 @@ class GetPost extends Notion {
 
   async execute() {
     const cacheKey = `'notion:blog:post:${this.slug}`;
-    const cachedPost = cache.get(cacheKey);
+    const cachedPost = this.getCacheResponse(cacheKey);
 
     if (cachedPost) {
       return cachedPost;
@@ -42,7 +40,7 @@ class GetPost extends Notion {
     })
 
     const transformedPost = await this.transformPost(post.results[0], true)
-    cache.set(cacheKey, transformedPost);
+    this.setCacheResponse(cacheKey, transformedPost);
     return transformedPost;
   }
 

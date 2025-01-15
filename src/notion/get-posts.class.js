@@ -1,23 +1,21 @@
-import { LRUCache } from 'lru-cache'
 import Notion from './notion.class'
-
-const cache = new LRUCache({
-  max: 10,
-  ttl: 1000 * 60 * 60 // 1 hour
-})
 
 class GetPosts extends Notion {
 
-  constructor (env, params) {
-    super(env)
+  constructor (worker) {
+    super(worker.env)
+
+    this.getCacheResponse = worker.getCacheResponse
+    this.setCacheResponse = worker.setCacheResponse
+
     this.cursors = new Map()
-    this.page = isNaN(parseInt(params.get('page'))) ? 1 : parseInt(params.get('page'))
-    this.limit = isNaN(parseInt(params.get('limit'))) ? 10 : parseInt(params.get('limit'))
+    this.page = isNaN(parseInt(worker.params.get('page'))) ? 1 : parseInt(params.get('page'))
+    this.limit = isNaN(parseInt(worker.params.get('limit'))) ? 10 : parseInt(params.get('limit'))
   }
 
   async execute() {
     const cacheKey = 'notion:blog:posts';
-    const cachedPosts = cache.get(cacheKey);
+    const cachedPosts = this.getCacheResponse(cacheKey);
 
     if (cachedPosts) {
       return cachedPosts;
@@ -43,7 +41,7 @@ class GetPosts extends Notion {
     const transformedPosts = await Promise.all(
       posts.results.map(async post => await this.transformPost(post))
     )
-    cache.set(cacheKey, transformedPosts);
+    this.setCacheResponse(cacheKey, transformedPosts);
     return transformedPosts;
   }
 

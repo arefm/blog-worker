@@ -9,10 +9,10 @@ export default {
     let handler = null
     switch (worker.action) {
       case 'GetAllPosts':
-        handler = new GetPosts(env, worker.params)
+        handler = new GetPosts(worker)
         break
       case 'GetPostBySlug':
-        handler = new GetPost(env, worker.params)
+        handler = new GetPost(worker)
         break
     }
 

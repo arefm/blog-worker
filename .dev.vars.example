@@ -1,2 +1,5 @@
-NOTION_TOKEN=your_notion_token_here
-NOTION_DATABASE_ID=your_database_id_here
+CORS_WHITE_LIST=webapp_url_goes_here
+NOTION_TOKEN=notion_token_goes_here
+NOTION_DATABASE_ID=notion_database_id_goes_here
+CACHE_MAX=50
+CACHE_TTL=3600
