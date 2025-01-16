@@ -17,19 +17,20 @@ export default {
       return worker.createResponse(null, { status: 404 })
     }
 
+    let apiKey = request.headers.get('X-API-Key') || ''
     const action = validActions.get(worker.action)
     if (action.auth) {
-      const requestApiKey = request.headers.get('X-API-Key')
-      const validApiKey = await worker.env.NOTION_BLOG_POSTS_CACHE.get(`token:${requestApiKey}`)
+      const validApiKey = await worker.KV.get(`token:${apiKey}`)
       if (!validApiKey) {
         return worker.createResponse(null, { status: 401 })
       }
+    } else {
+      apiKey = await worker.generateShortLivedToken()
     }
-    const authToken = await worker.generateShortLivedToken()
 
     const handler = new action.handler(worker)
     const response = await handler.execute()
 
-    return worker.createResponse(response, { 'X-API-Key': authToken })
+    return worker.createResponse(response, { 'X-API-Key': apiKey })
   }
 }
