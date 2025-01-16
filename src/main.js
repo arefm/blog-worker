@@ -5,32 +5,50 @@ import GetPost from './notion/get-post.class'
 
 export default {
   async fetch(request, env) {
-    const worker = new Worker(request, env)
+    try {
 
-    const validActions = new Map()
-    validActions.set('GetApiKey', { auth: false, handler: GetApiKey })
-    validActions.set('GetAllPosts', { auth: true, handler: GetPosts })
-    validActions.set('GetPostBySlug', { auth: true, handler: GetPost })
-
-    const isValidAction = validActions.has(worker.action)
-    if (!isValidAction) {
-      return worker.createResponse(null, { status: 404 })
-    }
-
-    let apiKey = request.headers.get('X-API-Key') || ''
-    const action = validActions.get(worker.action)
-    if (action.auth) {
-      const validApiKey = await worker.KV.get(`token:${apiKey}`)
-      if (!validApiKey) {
-        return worker.createResponse(null, { status: 401 })
+      if (request.method === "OPTIONS") {
+        // Handle CORS!
+        return new Response(null, {
+          headers: {
+            'Content-Type': 'application/json',
+            "Access-Control-Allow-Origin": env.CORS_WHITE_LIST,
+            "Access-Control-Allow-Methods": "GET",
+            "Access-Control-Allow-Headers": "Content-Type, X-API-Key",
+            'Access-Control-Expose-Headers': 'X-API-Key',
+          },
+        });
       }
-    } else {
-      apiKey = apiKey == '' ? await worker.generateShortLivedToken(worker.action) : apiKey
+
+      const worker = new Worker(request, env)
+
+      const validActions = new Map()
+      validActions.set('GetApiKey', { auth: false, handler: GetApiKey })
+      validActions.set('GetAllPosts', { auth: true, handler: GetPosts })
+      validActions.set('GetPostBySlug', { auth: true, handler: GetPost })
+
+      const isValidAction = validActions.has(worker.action)
+      if (!isValidAction) {
+        return worker.createErrorResponse('not found', 404)
+      }
+
+      let apiKey = request.headers.get('X-API-Key') || ''
+      const action = validActions.get(worker.action)
+      if (action.auth) {
+        const validApiKey = await worker.KV.get(`token:${apiKey}`)
+        if (!validApiKey) {
+          return worker.createErrorResponse('invalid api key', 401)
+        }
+      } else {
+        apiKey = apiKey === '' ? await worker.generateShortLivedToken() : apiKey
+      }
+
+      const handler = new action.handler(worker)
+      const response = await handler.execute()
+
+      return worker.createResponse(response, { 'X-API-Key': apiKey })
+    } catch (error) {
+      console.log(error)
     }
-
-    const handler = new action.handler(worker)
-    const response = await handler.execute()
-
-    return worker.createResponse(response, { 'X-API-Key': apiKey })
   }
 }
