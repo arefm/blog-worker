@@ -54,7 +54,7 @@ export default {
       }
 
       const handler = new action.handler(worker)
-      const response = await handler.execute()
+      const response = await handler.execute({ useCache: true })
 
       return worker.createResponse(response, { 'X-API-Key': apiKey })
     } catch (error) {
