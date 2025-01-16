@@ -16,13 +16,16 @@ class GetPost extends Notion {
     return slug.replace(/[^a-zA-Z0-9-_]/g, '');
   }
 
-  async execute() {
+  async execute({ useCache = true, dev = false }) {
     try {
-      const cacheKey = `notion:blog:post:${this.slug}`;
-      const cachedPost = await this.KV.get(cacheKey, { type: 'json' });
 
-      if (cachedPost) {
-        return cachedPost;
+      if (useCache) {
+        const cacheKey = `notion:blog:post:${this.slug}`;
+        const cachedPost = await this.KV.get(cacheKey, { type: 'json' });
+
+        if (cachedPost) {
+          return cachedPost;
+        }
       }
 
       const post = await this.notion.databases.query({
@@ -32,14 +35,21 @@ class GetPost extends Notion {
             property: 'Slug',
             rich_text: { equals: this.slug }
           }, {
-            property: 'Published',
-            checkbox: { equals: true }
-          }]
+            or: [{
+              property: 'OnReview',
+              checkbox: { equals: dev }
+            }, {
+              property: 'Published',
+              checkbox: { equals: true }
+            }]
+          }],
         }
       })
 
       const transformedPost = await this.transformPost(post.results[0], true)
-      await this.KV.put(cacheKey, JSON.stringify(transformedPost), { expirationTtl: 3600 });
+      if (useCache) {
+        await this.KV.put(cacheKey, JSON.stringify(transformedPost), { expirationTtl: 3600 });
+      }
       return transformedPost;
     } catch (error) {
       throw new Error(error)

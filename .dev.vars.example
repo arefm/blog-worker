@@ -1,5 +1,8 @@
+APP_ENV=development
 CORS_WHITE_LIST=webapp_url_goes_here
 NOTION_TOKEN=notion_token_goes_here
 NOTION_DATABASE_ID=notion_database_id_goes_here
+NOTION_SHOW_UNPUBLISHED=false
 CACHE_MAX=50
 CACHE_TTL=3600
+API_KEY_EXPIRATION=300

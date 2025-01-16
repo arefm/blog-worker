@@ -20,6 +20,9 @@ export default {
         });
       }
 
+      // Development Mode
+      const dev = env?.APP_ENV === 'development'
+
       const worker = new Worker(request, env)
 
       const validActions = new Map()
@@ -32,8 +35,15 @@ export default {
         return worker.createErrorResponse('not found', 404)
       }
 
-      let apiKey = request.headers.get('X-API-Key') || ''
       const action = validActions.get(worker.action)
+      if (dev) {
+        const handler = new action.handler(worker)
+        const response = await handler.execute({ useCache: false, dev })
+
+        return worker.createResponse(response, { 'X-API-Key': 'development' })
+      }
+
+      let apiKey = request.headers.get('X-API-Key') || ''
       if (action.auth) {
         const validApiKey = await worker.KV.get(`token:${apiKey}`)
         if (!validApiKey) {

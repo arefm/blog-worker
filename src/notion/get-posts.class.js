@@ -11,21 +11,28 @@ class GetPosts extends Notion {
     this.limit = isNaN(parseInt(worker.params.get('limit'))) ? 10 : parseInt(params.get('limit'))
   }
 
-  async execute() {
+  async execute({ useCache = true, dev = false }) {
     try {
 
-      const cacheKey = 'notion:blog:posts';
-      const cachedPosts = await this.KV.get(cacheKey, { type: 'json' });
+      if (useCache) {
+        const cacheKey = 'notion:blog:posts';
+        const cachedPosts = await this.KV.get(cacheKey, { type: 'json' });
 
-      if (cachedPosts) {
-        return cachedPosts;
+        if (cachedPosts) {
+          return cachedPosts;
+        }
       }
 
       const posts = await this.notion.databases.query({
         database_id: this.databaseId,
         filter: {
-          property: 'Published',
-          checkbox: { equals: true }
+          or: [{
+            property: 'Published',
+            checkbox: { equals: true }
+          }, {
+            property: 'OnReview',
+            checkbox: { equals: dev }
+          }]
         },
         sorts: [{
           property: 'Date',
@@ -39,7 +46,9 @@ class GetPosts extends Notion {
       const transformedPosts = await Promise.all(
         posts.results.map(async post => await this.transformPost(post))
       )
-      await this.KV.put(cacheKey, JSON.stringify(transformedPosts), { expirationTtl: 3600 });
+      if (useCache) {
+        await this.KV.put(cacheKey, JSON.stringify(transformedPosts), { expirationTtl: 3600 });
+      }
       return transformedPosts;
     } catch (error) {
       throw new Error(error)
