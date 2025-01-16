@@ -42,15 +42,9 @@ class GetPosts extends Notion {
       // Define the filter based on the mode (development or production)
       const filter = isDevMode
         ? {
-          or: [
-            { property: 'OnReview', checkbox: { equals: true } },
-            { property: 'Published', checkbox: { equals: true } },
-          ],
+          or: [{ property: 'Published', checkbox: { equals: true } }, { property: 'Published', checkbox: { equals: false } }]
         }
-        : {
-          property: 'Published',
-          checkbox: { equals: true },
-        };
+        : { property: 'Published', checkbox: { equals: true } };
 
       const posts = await this.notion.databases.query({
         database_id: this.databaseId,
