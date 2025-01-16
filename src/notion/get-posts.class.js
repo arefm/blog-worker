@@ -18,7 +18,6 @@ class GetPosts extends Notion {
       const cachedPosts = await this.KV.get(cacheKey, { type: 'json' });
 
       if (cachedPosts) {
-        throw new Error(error)
         return cachedPosts;
       }
 
