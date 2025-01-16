@@ -1,64 +1,93 @@
-import Worker from "./worker.class";
-import GetApiKey from "./get-api-key.class";
-import GetPosts from './notion/get-posts.class'
-import GetPost from './notion/get-post.class'
+import Worker from './worker.class';
+import GetApiKey from './get-api-key.class';
+import GetPosts from './notion/get-posts.class';
+import GetPost from './notion/get-post.class';
 
-export default {
-  async fetch(request, env) {
-    try {
+/**
+ * Handles CORS preflight requests.
+ *
+ * @param {Object} env - The Cloudflare Worker environment.
+ * @returns {Response} The CORS preflight response.
+ */
+function handleCorsPreflight(env) {
+  return new Response(null, {
+    headers: {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': env.CORS_WHITE_LIST,
+      'Access-Control-Allow-Methods': 'GET',
+      'Access-Control-Allow-Headers': 'Content-Type, X-API-Key',
+      'Access-Control-Expose-Headers': 'X-API-Key',
+    },
+  });
+}
 
-      if (request.method === "OPTIONS") {
-        // Handle CORS!
-        return new Response(null, {
-          headers: {
-            'Content-Type': 'application/json',
-            "Access-Control-Allow-Origin": env.CORS_WHITE_LIST,
-            "Access-Control-Allow-Methods": "GET",
-            "Access-Control-Allow-Headers": "Content-Type, X-API-Key",
-            'Access-Control-Expose-Headers': 'X-API-Key',
-          },
-        });
-      }
-
-      // Development Mode
-      const dev = env?.APP_ENV === 'development'
-
-      const worker = new Worker(request, env)
-
-      const validActions = new Map()
-      validActions.set('GetApiKey', { auth: false, handler: GetApiKey })
-      validActions.set('GetAllPosts', { auth: true, handler: GetPosts })
-      validActions.set('GetPostBySlug', { auth: true, handler: GetPost })
-
-      const isValidAction = validActions.has(worker.action)
-      if (!isValidAction) {
-        return worker.createErrorResponse('not found', 404)
-      }
-
-      const action = validActions.get(worker.action)
-      if (dev) {
-        const handler = new action.handler(worker)
-        const response = await handler.execute({ useCache: false, dev })
-
-        return worker.createResponse(response, { 'X-API-Key': 'development' })
-      }
-
-      let apiKey = request.headers.get('X-API-Key') || ''
-      if (action.auth) {
-        const validApiKey = await worker.KV.get(`token:${apiKey}`)
-        if (!validApiKey) {
-          return worker.createErrorResponse('invalid api key', 401)
-        }
-      } else {
-        apiKey = apiKey === '' ? await worker.generateShortLivedToken() : apiKey
-      }
-
-      const handler = new action.handler(worker)
-      const response = await handler.execute({ useCache: true })
-
-      return worker.createResponse(response, { 'X-API-Key': apiKey })
-    } catch (error) {
-      console.log(error)
+/**
+ * Handles incoming requests to the Cloudflare Worker.
+ *
+ * @param {Request} request - The incoming request object.
+ * @param {Object} env - The Cloudflare Worker environment.
+ * @returns {Promise<Response>} The response to be sent to the client.
+ */
+async function handleRequest(request, env) {
+  try {
+    // Handle CORS preflight requests
+    if (request.method === 'OPTIONS') {
+      return handleCorsPreflight(env);
     }
+
+    const worker = new Worker(request, env);
+
+    // Define valid actions and their properties
+    const validActions = new Map([
+      ['GetApiKey', { authRequired: false, handler: GetApiKey }],
+      ['GetAllPosts', { authRequired: true, handler: GetPosts }],
+      ['GetPostBySlug', { authRequired: true, handler: GetPost }],
+    ]);
+
+    if (!validActions.has(worker.action)) {
+      return worker.createErrorResponse('Not Found', 404);
+    }
+
+    const action = validActions.get(worker.action);
+
+    // Development mode handling
+    if (env?.DEV_MODE === 'true') {
+      const handler = new action.handler(worker);
+      const response = await handler.execute({ useCache: false, isDevMode: true });
+      return worker.createResponse(response, { 'X-API-Key': 'development' });
+    }
+
+    // API key authentication
+    let apiKey = request.headers.get('X-API-Key') || '';
+    if (action.authRequired) {
+      const isValidApiKey = await worker.isValidApiKey(apiKey);
+      if (!isValidApiKey) {
+        return worker.createErrorResponse('Invalid API key', 401);
+      }
+    } else if (!apiKey) {
+      apiKey = await worker.generateShortLivedToken();
+    }
+
+    const handler = new action.handler(worker);
+    const response = await handler.execute({});
+    return worker.createResponse(response, { 'X-API-Key': apiKey });
+
+  } catch (error) {
+    const status = 500;
+    // Log the error for debugging purposes
+    console.error('An unexpected error occurred:', error);
+    return new Response(JSON.stringify({ status, error: 'Internal Server Error' }), {
+      status,
+      headers: {
+        'Content-Type': 'application/json',
+        "Access-Control-Allow-Origin": env.CORS_WHITE_LIST,
+        "Access-Control-Allow-Methods": "GET",
+        "Access-Control-Allow-Headers": "Content-Type, X-API-Key",
+        'Access-Control-Expose-Headers': 'X-API-Key'
+      }
+    })
   }
 }
+
+// Export the handler function as the default export
+export default { fetch: handleRequest };
