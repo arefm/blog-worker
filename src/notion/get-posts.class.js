@@ -4,7 +4,7 @@ class GetPosts extends Notion {
 
   constructor (worker) {
     super(worker.env)
-    this.KV = worker.env.NOTION_BLOG_POSTS_CACHE
+    this.KV = worker.KV
 
     this.cursors = new Map()
     this.page = isNaN(parseInt(worker.params.get('page'))) ? 1 : parseInt(params.get('page'))

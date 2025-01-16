@@ -4,10 +4,7 @@ class GetPost extends Notion {
 
   constructor (worker) {
     super(worker.env)
-    this.KV = worker.env.NOTION_BLOG_POSTS_CACHE
-
-    this.getCacheResponse = worker.getCacheResponse
-    this.setCacheResponse = worker.setCacheResponse
+    this.KV = worker.KV
 
     this.slug = this.sanitizeSlug(worker.params.get('slug') || '404')
   }
