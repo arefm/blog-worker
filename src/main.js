@@ -25,7 +25,7 @@ export default {
         return worker.createResponse(null, { status: 401 })
       }
     } else {
-      apiKey = await worker.generateShortLivedToken()
+      apiKey = await worker.generateShortLivedToken(worker.action)
     }
 
     const handler = new action.handler(worker)

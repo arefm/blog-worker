@@ -38,12 +38,12 @@ class Worker {
     return action.replace(/[^a-zA-Z0-9-_]/g, '');
   }
 
-  async generateShortLivedToken() {
+  async generateShortLivedToken(action) {
     const token = Array.from(crypto.getRandomValues(new Uint32Array(8)))
       .map((n) => n.toString(36))
       .join('');
 
-    await this.KV.put(`token:${token}`, 'valid', { expirationTtl: 3600 })
+    await this.KV.put(`token:${token}`, action, { expirationTtl: this.env.API_KEY_EXPIRATION })
 
     return token;
   }

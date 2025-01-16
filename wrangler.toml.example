@@ -6,6 +6,7 @@ compatibility_date = ""
 CORS_WHITE_LIST=""
 CACHE_MAX=50
 CACHE_TTL=3600
+API_KEY_EXPIRATION=300
 
 [vars.env]
 NOTION_TOKEN = ""
